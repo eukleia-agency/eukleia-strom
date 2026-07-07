@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le Mogador — Guide de séjour · Eukleia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root {
+    --navy: #1B2B4B;
+    --navy-deep: #14213C;
+    --gold: #B8975A;
+    --gold-soft: #CBAF7A;
+    --cream: #F7F4EF;
+    --white: #FFFFFF;
+    --ink: #33394A;
+    --ink-soft: #5A6070;
+    --hairline: rgba(27, 43, 75, 0.09);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-weight: 300;
+    background: var(--cream);
+    color: var(--ink);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  a { color: inherit; }
+  button { font-family: inherit; }
+
+  .page { max-width: 820px; margin: 0 auto; }
+
+  /* ---------- BARRE DE PROGRESSION (parcours) ---------- */
+  .progress {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 3px;
+    background: rgba(27, 43, 75, 0.08);
+    z-index: 60;
+  }
+  .progress .bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--gold) 0%, var(--gold-soft) 100%);
+  }
+
+  /* ---------- RAIL DU PARCOURS (desktop) ---------- */
+  .rail {
+    position: fixed;
+    left: 26px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 55;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+  }
+  .rail .track {
+    position: absolute;
+    top: 14px; bottom: 14px;
+    left: 50%;
+    width: 1px;
+    transform: translateX(-50%);
+    background: rgba(27, 43, 75, 0.14);
+  }
+  .rail .track-fill {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    width: 1px;
+    transform: translateX(-50%);
+    height: 0;
+    background: var(--gold);
+    transition: height 0.2s ease-out;
+  }
+  .rail button {
+    position: relative;
+    width: 28px; height: 28px;
+    border: 1px solid rgba(27, 43, 75, 0.25);
+    background: var(--cream);
+    color: var(--ink-soft);
+    font-family: 'Lora', Georgia, serif;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    z-index: 1;
+  }
+  .rail button:hover, .rail button:focus-visible { border-color: var(--gold); color: var(--navy); }
+  .rail button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .rail button.done {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--white);
+  }
+  .rail button.active {
+    background: var(--navy);
+    border-color: var(--navy);
+    color: var(--gold-soft);
+    transform: scale(1.15);
+  }
+  .rail button.finish.done, .rail button.finish.active {
+    background:
+      conic-gradient(var(--navy) 0 25%, var(--white) 0 50%, var(--navy) 0 75%, var(--white) 0);
+    color: transparent;
+    border-color: var(--navy);
+  }
+  .rail button::after {
+    content: attr(data-label);
+    position: absolute;
+    left: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--navy);
+    color: var(--cream);
+    font-family: 'Poppins', sans-serif;
+    font-size: 10.5px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    padding: 5px 10px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .rail button:hover::after { opacity: 1; }
+  @media (min-width: 1100px) {
+    .rail { display: flex; }
+    .progress { display: none; }
+  }
+
+  /* ---------- HERO ---------- */
+  .hero {
+    background: linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color: var(--cream);
+    text-align: center;
+    padding: 76px 32px 58px;
+    overflow: hidden;
+  }
+  .hero .brand {
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 0.45em;
+    text-transform: uppercase;
+    color: var(--gold-soft);
+  }
+
+  /* L'obstacle — ornement signature */
+  .jump {
+    display: block;
+    width: 190px;
+    height: auto;
+    margin: 30px auto 26px;
+  }
+  .jump .j {
+    stroke: var(--gold);
+    stroke-width: 2;
+    fill: none;
+    stroke-linecap: round;
+  }
+  .jump .g { opacity: 0.35; stroke-width: 1.4; }
+  .jump .f { fill: var(--gold); stroke: none; }
+
+  .hero h1 {
+    font-family: 'Lora', Georgia, serif;
+    font-weight: 500;
+    font-size: 52px;
+    letter-spacing: 0.02em;
+    color: var(--white);
+  }
+  .hero .subtitle {
+    font-family: 'Lora', Georgia, serif;
+    font-style: italic;
+    font-size: 19px;
+    color: var(--gold-soft);
+    margin-top: 8px;
+  }
+  .hero .guest {
+    margin-top: 28px;
+    font-size: 12.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(247, 244, 239, 0.75);
+  }
+  .hero .guest strong { font-weight: 500; color: var(--cream); letter-spacing: 0.14em; }
+
+  /* Frise des 7 jours */
+  .week {
+    position: relative;
+    max-width: 430px;
+    margin: 30px auto 0;
+    display: flex;
+    justify-content: space-between;
+  }
+  .week::before {
+    content: "";
+    position: absolute;
+    left: 12px; right: 12px;
+    top: 33px;
+    height: 1px;
+    background: rgba(184, 151, 90, 0.4);
+  }
+  .day {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 44px;
+  }
+  .day .d-label {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(247, 244, 239, 0.55);
+  }
+  .day .d-dot {
+    width: 7px; height: 7px;
+    margin: 6px 0;
+    border: 1px solid var(--gold);
+    background: var(--navy-deep);
+    transform: rotate(45deg);
+  }
+  .day.edge .d-dot { background: var(--gold); }
+  .day .d-num {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 15px;
+    color: var(--cream);
+  }
+  .day .d-note {
+    font-size: 8px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold-soft);
+    margin-top: 3px;
+    min-height: 11px;
+  }
+  .hero .address {
+    margin-top: 26px;
+    font-size: 11.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(247, 244, 239, 0.5);
+  }
+  .scroll-cue {
+    width: 1px;
+    height: 34px;
+    margin: 30px auto 0;
+    background: linear-gradient(to bottom, var(--gold), transparent);
+    animation: cue 2.2s ease-in-out infinite;
+  }
+  @keyframes cue {
+    0%, 100% { transform: translateY(0); opacity: 0.9; }
+    50% { transform: translateY(8px); opacity: 0.4; }
+  }
+
+  /* Animation d'entrée du hero */
+  .hero .rise { opacity: 0; transform: translateY(14px); transition: opacity 0.8s ease, transform 0.8s ease; }
+  body.loaded .hero .rise { opacity: 1; transform: none; }
+  body.loaded .hero .rise.d1 { transition-delay: 0.15s; }
+  body.loaded .hero .rise.d2 { transition-delay: 0.3s; }
+  body.loaded .hero .rise.d3 { transition-delay: 0.5s; }
+  body.loaded .hero .rise.d4 { transition-delay: 0.7s; }
+  body.loaded .hero .rise.d5 { transition-delay: 0.9s; }
+  .jump .j { stroke-dasharray: 320; stroke-dashoffset: 320; transition: stroke-dashoffset 1.3s ease 0.2s; }
+  .jump .f { opacity: 0; transition: opacity 0.6s ease 1.2s; }
+  body.loaded .jump .j { stroke-dashoffset: 0; }
+  body.loaded .jump .f { opacity: 1; }
+
+  /* ---------- SECTIONS ---------- */
+  .content { padding: 0 32px; }
+  section { padding: 60px 0 10px; }
+
+  .sec-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .flag-badge {
+    flex: none;
+    width: 36px; height: 36px;
+    margin-top: 4px;
+    border: 1px solid var(--gold);
+    background: var(--white);
+    color: var(--navy);
+    font-family: 'Lora', Georgia, serif;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .eyebrow {
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+  h2 {
+    font-family: 'Lora', Georgia, serif;
+    font-weight: 500;
+    font-size: 28px;
+    color: var(--navy);
+    line-height: 1.25;
+  }
+  p.lead { max-width: 640px; color: var(--ink-soft); margin-bottom: 6px; }
+
+  /* ---------- REVEAL AU SCROLL ---------- */
+  .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .places .reveal:nth-child(2) { transition-delay: 0.08s; }
+  .places .reveal:nth-child(3) { transition-delay: 0.16s; }
+  .places .reveal:nth-child(4) { transition-delay: 0.24s; }
+
+  /* ---------- BIENVENUE ---------- */
+  .welcome-card {
+    background: var(--white);
+    border-top: 3px solid var(--gold);
+    padding: 40px 44px;
+    box-shadow: 0 8px 28px rgba(27, 43, 75, 0.07);
+  }
+  .welcome-card p {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 16.5px;
+    color: var(--ink);
+  }
+  .welcome-card p + p { margin-top: 14px; }
+  .welcome-card em { color: var(--navy); }
+  .welcome-card .sign {
+    margin-top: 22px;
+    font-style: italic;
+    color: var(--gold);
+    font-size: 15.5px;
+  }
+
+  /* ---------- WIFI ---------- */
+  .wifi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .wifi-card {
+    background: var(--white);
+    border: 1px solid var(--hairline);
+    border-top: 3px solid var(--gold);
+    padding: 28px 28px 26px;
+  }
+  .wifi-card .zone {
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--navy);
+    margin-bottom: 16px;
+  }
+  .wifi-card .label {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 3px;
+  }
+  .wifi-card .value {
+    font-weight: 500;
+    font-size: 15px;
+    color: var(--navy);
+    margin-bottom: 16px;
+    word-break: break-all;
+  }
+  .password {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--cream);
+    border: 1px dashed rgba(184, 151, 90, 0.6);
+    padding: 10px 14px;
+  }
+  .password .pw {
+    font-weight: 500;
+    font-size: 16px;
+    letter-spacing: 0.06em;
+    color: var(--navy);
+    word-break: break-all;
+  }
+  .copy-btn {
+    flex: none;
+    margin-left: auto;
+    border: 1px solid var(--gold);
+    background: transparent;
+    color: var(--gold);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 7px 12px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+  .copy-btn:hover, .copy-btn:focus-visible { background: var(--gold); color: var(--white); }
+  .copy-btn:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+  .copy-btn.copied { background: var(--navy); border-color: var(--navy); color: var(--gold-soft); }
+
+  /* ---------- CARTES LIEUX ---------- */
+  .group-title {
+    font-family: 'Lora', Georgia, serif;
+    font-style: italic;
+    font-size: 17px;
+    color: var(--gold);
+    margin: 30px 0 14px;
+  }
+  .places {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  a.place {
+    position: relative;
+    display: block;
+    background: var(--white);
+    border: 1px solid var(--hairline);
+    padding: 22px 24px;
+    text-decoration: none;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+  a.place:hover, a.place:focus-visible {
+    transform: translateY(-3px);
+    border-color: rgba(184, 151, 90, 0.65);
+    box-shadow: 0 12px 26px rgba(27, 43, 75, 0.1);
+  }
+  a.place:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  a.place::after {
+    content: "↗";
+    position: absolute;
+    top: 16px; right: 18px;
+    font-size: 13px;
+    color: var(--gold);
+    opacity: 0.45;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  a.place:hover::after { opacity: 1; transform: translate(2px, -2px); }
+  .place.wide { grid-column: 1 / -1; }
+  .place .name {
+    font-family: 'Lora', Georgia, serif;
+    font-weight: 500;
+    font-size: 17px;
+    color: var(--navy);
+    padding-right: 22px;
+  }
+  .place .tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin: 6px 0 8px;
+  }
+  .place .desc { font-size: 13.5px; color: var(--ink-soft); line-height: 1.65; }
+  .maps-hint {
+    margin-top: 14px;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    letter-spacing: 0.04em;
+  }
+  .maps-hint span { color: var(--gold); }
+
+  /* ---------- CONCIERGERIE ---------- */
+  .concierge {
+    background: linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color: var(--cream);
+    padding: 52px 48px;
+  }
+  .concierge .sec-head .flag-badge {
+    background: transparent;
+    color: var(--gold-soft);
+    border-color: rgba(184, 151, 90, 0.7);
+  }
+  .concierge .eyebrow { color: var(--gold-soft); }
+  .concierge h2 { color: var(--white); }
+  .concierge > p { color: rgba(247, 244, 239, 0.82); max-width: 620px; }
+  .services {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 34px;
+    margin: 26px 0 32px;
+    padding: 0;
+    list-style: none;
+  }
+  .services li {
+    position: relative;
+    padding-left: 22px;
+    font-size: 14px;
+    color: rgba(247, 244, 239, 0.9);
+  }
+  .services li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 9px;
+    width: 6px; height: 6px;
+    background: var(--gold);
+    transform: rotate(45deg);
+  }
+  .contact-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold-soft);
+    margin-bottom: 6px;
+  }
+  .contact-who {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 19px;
+    color: var(--white);
+    margin-bottom: 18px;
+  }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn {
+    display: inline-block;
+    padding: 13px 24px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: all 0.25s ease;
+  }
+  .btn-gold { background: var(--gold); color: var(--navy); border: 1px solid var(--gold); }
+  .btn-gold:hover { background: var(--gold-soft); border-color: var(--gold-soft); }
+  .btn-line { border: 1px solid rgba(184, 151, 90, 0.6); color: var(--cream); }
+  .btn-line:hover { border-color: var(--gold); color: var(--gold-soft); }
+  .btn:focus-visible { outline: 2px solid var(--cream); outline-offset: 2px; }
+
+  /* ---------- FOOTER ---------- */
+  footer { text-align: center; padding: 46px 32px 54px; }
+  footer .brand {
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--navy);
+  }
+  footer .tagline {
+    font-family: 'Lora', Georgia, serif;
+    font-style: italic;
+    color: var(--gold);
+    font-size: 14.5px;
+    margin-top: 6px;
+  }
+  footer .address {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 12px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ---------- CARTE ---------- */
+  .map-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .chip {
+    border: 1px solid var(--gold);
+    background: transparent;
+    color: var(--navy);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+  .chip:hover { background: rgba(184, 151, 90, 0.12); }
+  .chip.active { background: var(--navy); border-color: var(--navy); color: var(--gold-soft); }
+  .chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .map-wrap { position: relative; border: 1px solid var(--hairline); box-shadow: 0 8px 28px rgba(27, 43, 75, 0.07); }
+  #map { height: 440px; width: 100%; background: var(--cream); z-index: 1; }
+  .map-offline {
+    position: absolute; inset: 0;
+    display: none;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 24px;
+    background: var(--cream); color: var(--ink-soft);
+    font-size: 13px; z-index: 5;
+  }
+  .map-offline.show { display: flex; }
+  .mk {
+    width: 12px; height: 12px;
+    background: var(--gold);
+    border: 2px solid var(--white);
+    transform: rotate(45deg);
+    box-shadow: 0 1px 5px rgba(27, 43, 75, 0.45);
+  }
+  .mk.home { width: 16px; height: 16px; background: var(--navy); border: 2px solid var(--gold); }
+  .home-label {
+    background: var(--navy); color: var(--cream);
+    border: none; border-radius: 0;
+    font-family: 'Poppins', sans-serif;
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 4px 9px;
+    box-shadow: 0 2px 8px rgba(27, 43, 75, 0.35);
+  }
+  .home-label::before { display: none; }
+  .leaflet-popup-content-wrapper {
+    border-radius: 0;
+    background: var(--white);
+    color: var(--ink);
+    font-family: 'Poppins', sans-serif;
+    box-shadow: 0 10px 30px rgba(27, 43, 75, 0.25);
+  }
+  .leaflet-popup-content { margin: 14px 16px; font-size: 13px; line-height: 1.5; }
+  .pp-name { font-family: 'Lora', Georgia, serif; font-size: 15px; color: var(--navy); display: block; }
+  .pp-cat {
+    font-size: 9.5px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--gold); display: block; margin: 3px 0 7px;
+  }
+  .leaflet-container a.pp-link {
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--navy); text-decoration: none;
+    border-bottom: 1px solid var(--gold);
+  }
+  .map-print-note { display: none; font-size: 12px; color: var(--ink-soft); }
+  .tag.time { color: var(--ink-soft); margin-left: 8px; }
+  .tag.time::before { content: "· "; color: var(--gold); }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width: 640px) {
+    .hero { padding: 58px 22px 44px; }
+    .hero h1 { font-size: 38px; }
+    .content { padding: 0 20px; }
+    .wifi-grid, .places, .services { grid-template-columns: 1fr; }
+    .place.wide { grid-column: auto; }
+    .welcome-card { padding: 30px 26px; }
+    .concierge { padding: 40px 26px; }
+    .week { max-width: 100%; }
+    .day { width: 38px; }
+    #map { height: 360px; }
+  }
+
+  /* ---------- MOUVEMENT RÉDUIT ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .reveal, .hero .rise { opacity: 1 !important; transform: none !important; transition: none !important; }
+    .jump .j { stroke-dashoffset: 0 !important; transition: none !important; }
+    .jump .f { opacity: 1 !important; transition: none !important; }
+    .scroll-cue { animation: none; }
+    a.place, .rail button, .copy-btn, .btn { transition: none; }
+  }
+
+  /* ---------- IMPRESSION ---------- */
+  @media print {
+    body { background: var(--white); }
+    .progress, .rail, .scroll-cue, .copy-btn { display: none !important; }
+    .reveal, .hero .rise { opacity: 1 !important; transform: none !important; }
+    .jump .j { stroke-dashoffset: 0 !important; }
+    .jump .f { opacity: 1 !important; }
+    .hero, .concierge { break-inside: avoid; }
+    a.place, .wifi-card, .welcome-card { break-inside: avoid; box-shadow: none; }
+    a.place::after { display: none; }
+    section { padding: 34px 0 4px; }
+    .map-filters, .map-wrap { display: none !important; }
+    .map-print-note { display: block; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress" aria-hidden="true"><div class="bar" id="progressBar"></div></div>
+<nav class="rail" id="rail" aria-label="Étapes du guide">
+  <div class="track"></div>
+  <div class="track-fill" id="trackFill"></div>
+</nav>
+
+<div class="page">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="brand rise">Eukleia</div>
+    <svg class="jump" viewBox="0 0 220 84" aria-hidden="true">
+      <line class="j g" x1="6"  y1="78" x2="214" y2="78"/>
+      <line class="j"   x1="30" y1="78" x2="30"  y2="16"/>
+      <line class="j"   x1="190" y1="78" x2="190" y2="16"/>
+      <polygon class="f" points="30,16 30,6 44,11"/>
+      <polygon class="f" points="190,16 190,6 176,11"/>
+      <line class="j" x1="38" y1="34" x2="182" y2="34"/>
+      <line class="j" x1="38" y1="50" x2="182" y2="50"/>
+      <line class="j" x1="38" y1="66" x2="182" y2="66"/>
+    </svg>
+    <h1 class="rise d1">Le Mogador</h1>
+    <div class="subtitle rise d2">Guide de séjour</div>
+    <div class="guest rise d3">Préparé pour <strong>Madame Strom &amp; sa famille</strong></div>
+
+    <div class="week rise d4" aria-label="Semaine du 7 au 13 juillet 2026">
+      <div class="day edge"><span class="d-label">Mar</span><span class="d-dot"></span><span class="d-num">7</span><span class="d-note">Arrivée</span></div>
+      <div class="day"><span class="d-label">Mer</span><span class="d-dot"></span><span class="d-num">8</span><span class="d-note"></span></div>
+      <div class="day"><span class="d-label">Jeu</span><span class="d-dot"></span><span class="d-num">9</span><span class="d-note"></span></div>
+      <div class="day"><span class="d-label">Ven</span><span class="d-dot"></span><span class="d-num">10</span><span class="d-note"></span></div>
+      <div class="day"><span class="d-label">Sam</span><span class="d-dot"></span><span class="d-num">11</span><span class="d-note"></span></div>
+      <div class="day"><span class="d-label">Dim</span><span class="d-dot"></span><span class="d-num">12</span><span class="d-note"></span></div>
+      <div class="day edge"><span class="d-label">Lun</span><span class="d-dot"></span><span class="d-num">13</span><span class="d-note">Départ</span></div>
+    </div>
+
+    <div class="address rise d5">69 rue Albert Fracasse · 14800 Deauville</div>
+    <div class="scroll-cue" aria-hidden="true"></div>
+  </header>
+
+  <div class="content">
+
+    <!-- 01 BIENVENUE -->
+    <section id="bienvenue" data-flag="01" data-label="Bienvenue">
+      <div class="sec-head reveal">
+        <span class="flag-badge">01</span>
+        <div>
+          <div class="eyebrow">Bienvenue</div>
+          <h2>Heureux de vous retrouver à Deauville</h2>
+        </div>
+      </div>
+      <div class="welcome-card reveal">
+        <p>Chère Madame Strom,</p>
+        <p>Toute l'équipe Eukleia vous souhaite la bienvenue au Mogador. C'est un plaisir de vous accueillir, ainsi que vos filles et leur nanny, pour cette nouvelle édition du Jumping au <em>Pôle International du Cheval Longines</em> — un rendez-vous que vous connaissez mieux que personne.</p>
+        <p>Nous avons préparé la maison avec soin pour que cette semaine de concours soit aussi sereine que possible. Ce guide rassemble l'essentiel de votre séjour, ainsi que quelques adresses que nous aimons recommander.</p>
+        <p class="sign">Très belle semaine — et belle réussite au concours.</p>
+      </div>
+    </section>
+
+    <!-- 02 WIFI -->
+    <section id="wifi" data-flag="02" data-label="Connexion wifi">
+      <div class="sec-head reveal">
+        <span class="flag-badge">02</span>
+        <div>
+          <div class="eyebrow">Connexion</div>
+          <h2>Wifi de la maison</h2>
+        </div>
+      </div>
+      <div class="wifi-grid">
+        <div class="wifi-card reveal">
+          <div class="zone">Maison</div>
+          <div class="label">Réseau</div>
+          <div class="value">Domotique</div>
+          <div class="label">Mot de passe</div>
+          <div class="password">
+            <span class="pw">Jls0669320607</span>
+            <button class="copy-btn" data-copy="Jls0669320607" aria-label="Copier le mot de passe du wifi de la maison">Copier</button>
+          </div>
+        </div>
+        <div class="wifi-card reveal">
+          <div class="zone">Sous-sol</div>
+          <div class="label">Réseau</div>
+          <div class="value">Livebox-4590 ou Livebox-4590_5GHz</div>
+          <div class="label">Mot de passe</div>
+          <div class="password">
+            <span class="pw">Deauville14.</span>
+            <button class="copy-btn" data-copy="Deauville14." aria-label="Copier le mot de passe du wifi du sous-sol">Copier</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 CARTE -->
+    <section id="carte" data-flag="03" data-label="Se repérer">
+      <div class="sec-head reveal">
+        <span class="flag-badge">03</span>
+        <div>
+          <div class="eyebrow">Se repérer</div>
+          <h2>La carte de votre séjour</h2>
+        </div>
+      </div>
+      <div class="map-filters reveal" role="group" aria-label="Filtrer la carte">
+        <button type="button" class="chip active" data-cat="all">Tout</button>
+        <button type="button" class="chip" data-cat="cheval">Cheval</button>
+        <button type="button" class="chip" data-cat="tables">Tables</button>
+        <button type="button" class="chip" data-cat="bienetre">Bien-être</button>
+        <button type="button" class="chip" data-cat="escapades">Escapades</button>
+      </div>
+      <div class="map-wrap reveal">
+        <div id="map" role="application" aria-label="Carte des adresses du guide"></div>
+        <div class="map-offline" id="mapOffline">La carte interactive s'affiche dès que le guide est consulté en ligne.</div>
+      </div>
+      <p class="maps-hint reveal"><span>◆</span>&nbsp; Le Mogador est repéré en bleu marine — touchez un point pour afficher l'adresse et lancer l'itinéraire.</p>
+      <p class="map-print-note">Carte interactive disponible dans la version en ligne du guide.</p>
+    </section>
+
+    <!-- 04 ESPRIT CHEVAL -->
+    <section id="cheval" data-flag="04" data-label="L'esprit cheval">
+      <div class="sec-head reveal">
+        <span class="flag-badge">04</span>
+        <div>
+          <div class="eyebrow">L'esprit cheval</div>
+          <h2>Votre semaine équestre</h2>
+        </div>
+      </div>
+      <div class="places">
+        <a class="place wide reveal" href="https://www.google.com/maps/search/?api=1&amp;query=P%C3%B4le%20International%20du%20Cheval%20Longines%20Deauville&amp;query_place_id=ChIJoYNlvGXT4UcRhD3c_bKiwGE" target="_blank" rel="noopener">
+          <div class="name">Le Pôle International du Cheval Longines</div>
+          <div class="tag">Votre concours</div><span class="tag time">≈ 8 min en voiture</span>
+          <div class="desc">À quelques minutes du Mogador, aux portes de Deauville. Nous vous souhaitons de très belles épreuves tout au long de la semaine.</div>
+        </a>
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Centre%20%C3%A9questre%20Blonville-sur-Mer&amp;query_place_id=ChIJlZoirxHV4UcRzxQ_hqgx9b4" target="_blank" rel="noopener">
+          <div class="name">Centre équestre de Blonville</div>
+          <div class="tag">Cheval sur la plage</div><span class="tag time">≈ 10 min en voiture</span>
+          <div class="desc">Pour monter à cheval au bord de l'eau — une expérience inoubliable, pour vous comme pour vos filles.</div>
+        </a>
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Haras%20de%20Meautry%20Touques&amp;query_place_id=ChIJuXaYtmvT4UcRCig_KeXGlSo" target="_blank" rel="noopener">
+          <div class="name">Le Haras de Meautry — Touques</div>
+          <div class="tag">Balade apaisante</div><span class="tag time">≈ 9 min en voiture</span>
+          <div class="desc">Le haras historique de la famille Rothschild, tout proche du Mogador. Une promenade au milieu des prés, où l'on peut approcher et caresser les chevaux.</div>
+        </a>
+      </div>
+      <p class="maps-hint reveal"><span>↗</span>&nbsp; Touchez une adresse pour l'ouvrir dans Google Maps et lancer l'itinéraire.</p>
+    </section>
+
+    <!-- 05 TABLES -->
+    <section id="tables" data-flag="05" data-label="Les tables">
+      <div class="sec-head reveal">
+        <span class="flag-badge">05</span>
+        <div>
+          <div class="eyebrow">Nos adresses</div>
+          <h2>Les tables que nous aimons</h2>
+        </div>
+      </div>
+      <p class="lead reveal">Vous connaissez Deauville de longue date — voici néanmoins nos favorites du moment, au fil de la journée.</p>
+
+      <div class="group-title reveal">Les iconiques</div>
+      <div class="places">
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Le%20Drakkar%20Deauville&amp;query_place_id=ChIJfyelmrHU4UcRTk5ofRXqsfQ" target="_blank" rel="noopener">
+          <div class="name">Le Drakkar</div>
+          <div class="tag">Institution deauvillaise</div><span class="tag time">≈ 4 min à pied</span>
+          <div class="desc">La brasserie emblématique du centre-ville, valeur sûre à toute heure.</div>
+        </a>
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Chez%20Miocque%20Deauville&amp;query_place_id=ChIJR54wd7HU4UcRElJz8hW-2Io" target="_blank" rel="noopener">
+          <div class="name">Chez Miocque</div>
+          <div class="tag">Institution deauvillaise</div><span class="tag time">≈ 4 min à pied</span>
+          <div class="desc">Le bistrot mythique de Deauville, chaleureux et authentique.</div>
+        </a>
+      </div>
+
+      <div class="group-title reveal">Du matin au soir</div>
+      <div class="places">
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Hibouville%20Deauville&amp;query_place_id=ChIJNZvavr_V4UcRLuPDOQEFeHY" target="_blank" rel="noopener">
+          <div class="name">Hibouville</div>
+          <div class="tag">Petit déjeuner</div><span class="tag time">≈ 8 min à pied</span>
+          <div class="desc">Notre adresse favorite pour bien commencer la journée.</div>
+        </a>
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Le%20Deauville%20restaurant%20Deauville&amp;query_place_id=ChIJ87NRzAHV4UcRnZYSdAuC2Ds" target="_blank" rel="noopener">
+          <div class="name">Le Deauville</div>
+          <div class="tag">Brunch</div><span class="tag time">≈ 15 min à pied</span>
+          <div class="desc">Le rendez-vous brunch par excellence, à savourer sans se presser.</div>
+        </a>
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Le%20R%C3%A9fectoire%20des%20Franciscaines%20Deauville&amp;query_place_id=ChIJT_Hx4ALV4UcR84ZQLWCXN38" target="_blank" rel="noopener">
+          <div class="name">Le Réfectoire des Franciscaines</div>
+          <div class="tag">Goûter</div><span class="tag time">≈ 9 min à pied</span>
+          <div class="desc">Une pause gourmande dans le cadre unique des Franciscaines — vos filles adoreront.</div>
+        </a>
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=La%20Brise%20Marine%20Villerville&amp;query_place_id=ChIJ5YuoCwAt4EcRh7qo8b8yIyE" target="_blank" rel="noopener">
+          <div class="name">La Brise Marine</div>
+          <div class="tag">Villerville · Apéritif</div><span class="tag time">≈ 14 min en voiture</span>
+          <div class="desc">Sur la plage de Villerville — huîtres et planches à l'heure dorée, pour conclure une balade au bord de l'eau.</div>
+        </a>
+      </div>
+
+      <div class="group-title reveal">Pour dîner</div>
+      <div class="places">
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Ciro%27s%20Deauville&amp;query_place_id=ChIJI4SUxrbU4UcR60dgdSFZh58" target="_blank" rel="noopener">
+          <div class="name">Ciro's</div>
+          <div class="tag">Coucher de soleil</div><span class="tag time">≈ 10 min à pied</span>
+          <div class="desc">Sur les Planches, face à la mer — le dîner au coucher du soleil par excellence.</div>
+        </a>
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Kyo%20Deauville&amp;query_place_id=ChIJ5bOmI0fV4UcR-4Yxldfq6VM" target="_blank" rel="noopener">
+          <div class="name">Kyo Deauville</div>
+          <div class="tag">Japonais &amp; asiatique</div><span class="tag time">≈ 7 min à pied</span>
+          <div class="desc">Excellent japonais, également en livraison au Mogador après une longue journée de concours.</div>
+        </a>
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Mamma%20Mia%20Deauville&amp;query_place_id=ChIJ58ln1zDV4UcRR28GkIIUzHk" target="_blank" rel="noopener">
+          <div class="name">Mamma Mia</div>
+          <div class="tag">Italien</div><span class="tag time">≈ 14 min à pied</span>
+          <div class="desc">Notre table italienne favorite, chaleureuse et généreuse.</div>
+        </a>
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Les%20Ammonites%20B%C3%A9nerville-sur-Mer&amp;query_place_id=ChIJcU7Fwd7U4UcRbUrLxuMSJKE" target="_blank" rel="noopener">
+          <div class="name">La Terrasse des Ammonites</div>
+          <div class="tag">Bénerville · Grand écran</div><span class="tag time">≈ 7 min en voiture</span>
+          <div class="desc">En bout de promenade, face à la mer — et les matchs de la Coupe du Monde sur grand écran.</div>
+        </a>
+      </div>
+    </section>
+
+    <!-- 06 CULTURE & BIEN-ÊTRE -->
+    <section id="bienetre" data-flag="06" data-label="Culture &amp; bien-être">
+      <div class="sec-head reveal">
+        <span class="flag-badge">06</span>
+        <div>
+          <div class="eyebrow">Culture &amp; bien-être</div>
+          <h2>Prendre le temps</h2>
+        </div>
+      </div>
+      <div class="places">
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Les%20Franciscaines%20Deauville&amp;query_place_id=ChIJT_Hx4ALV4UcR84ZQLWCXN38" target="_blank" rel="noopener">
+          <div class="name">Les Franciscaines</div>
+          <div class="tag">Visite</div><span class="tag time">≈ 9 min à pied</span>
+          <div class="desc">Le lieu culturel incontournable de Deauville — expositions et découvertes pour toute la famille.</div>
+        </a>
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Spa%20Guerlain%20H%C3%B4tel%20Le%20Normandy%20Deauville&amp;query_place_id=ChIJ7dc0ULHU4UcRapdcD0OZB7Y" target="_blank" rel="noopener">
+          <div class="name">Spa Guerlain — Le Normandy</div>
+          <div class="tag">Nouveauté</div><span class="tag time">≈ 5 min à pied</span>
+          <div class="desc">Le tout nouveau spa Guerlain de l'hôtel Le Normandy, pour une parenthèse d'exception.</div>
+        </a>
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Maison%20Douce%20%C3%89poque&amp;query_place_id=ChIJ0VvdENvV4UcRy0wuH-2S0mc" target="_blank" rel="noopener">
+          <div class="name">Maison Douce Époque</div>
+          <div class="tag">Détente &amp; sport</div><span class="tag time">≈ 8 min en voiture</span>
+          <div class="desc">Spa, piscine, tennis et padel — et un rooftop avec vue panoramique pour prolonger la soirée.</div>
+        </a>
+      </div>
+    </section>
+
+    <!-- 07 ESCAPADES -->
+    <section id="escapades" data-flag="07" data-label="Escapades">
+      <div class="sec-head reveal">
+        <span class="flag-badge">07</span>
+        <div>
+          <div class="eyebrow">Escapades</div>
+          <h2>Autour de Deauville</h2>
+        </div>
+      </div>
+      <div class="places">
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Villerville&amp;query_place_id=ChIJQ_1y4OUs4EcRoNK8T0gUDAQ" target="_blank" rel="noopener">
+          <div class="name">Villerville</div>
+          <div class="tag">Village de charme</div><span class="tag time">≈ 14 min en voiture</span>
+          <div class="desc">Un village d'artistes suspendu au-dessus de la mer, entre Trouville et Honfleur. Parfait pour flâner.</div>
+        </a>
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Beaumont-en-Auge&amp;query_place_id=ChIJZcWeaWvR4UcRAPu8T0gUDAQ" target="_blank" rel="noopener">
+          <div class="name">Beaumont-en-Auge</div>
+          <div class="tag">Pays d'Auge</div><span class="tag time">≈ 20 min en voiture</span>
+          <div class="desc">Un village perché plein de charme — avec un déjeuner au Petit Beaumont pour parfaire l'escapade.</div>
+        </a>
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Batteries%20du%20Mont%20Canisy&amp;query_place_id=ChIJAcvfJfDU4UcR-Qr92EnGI7E" target="_blank" rel="noopener">
+          <div class="name">Les Batteries du Mont Canisy</div>
+          <div class="tag">Balade &amp; panorama</div><span class="tag time">≈ 9 min en voiture</span>
+          <div class="desc">Une balade entre histoire et grand air : les bunkers de la Seconde Guerre mondiale et une vue superbe sur toute la côte.</div>
+        </a>
+        <a class="place reveal" href="https://www.google.com/maps/search/?api=1&amp;query=Ferme%20du%20Ch%C3%A2teau%20Villerville&amp;query_place_id=ChIJsToN8zct4EcR6uXIf0hhe7s" target="_blank" rel="noopener">
+          <div class="name">La Ferme du Château</div>
+          <div class="tag">Villerville · Bio &amp; local</div><span class="tag time">≈ 14 min en voiture</span>
+          <div class="desc">Légumes, fromages et œufs d'une ferme en biodynamie — vente à la ferme en fin de journée.</div>
+        </a>
+      </div>
+    </section>
+
+    <!-- 08 CONCIERGERIE -->
+    <section id="conciergerie" data-flag="08" data-label="Conciergerie · Arrivée" data-finish="true">
+      <div class="concierge reveal">
+        <div class="sec-head">
+          <span class="flag-badge">08</span>
+          <div>
+            <div class="eyebrow">À votre service</div>
+            <h2>La conciergerie Eukleia</h2>
+          </div>
+        </div>
+        <p>Tout au long de votre séjour, notre conciergerie se tient à votre entière disposition pour faciliter votre semaine — n'hésitez pas à nous solliciter, à toute heure.</p>
+        <ul class="services">
+          <li>Réservations de restaurants</li>
+          <li>Taxi &amp; transferts</li>
+          <li>Pressing &amp; blanchisserie</li>
+          <li>Courses &amp; livraisons</li>
+          <li>Ménage supplémentaire en cours de séjour</li>
+          <li>Toute demande particulière</li>
+        </ul>
+        <div class="contact-label">Votre contact durant le séjour</div>
+        <div class="contact-who">Chahine · Eukleia</div>
+        <div class="cta-row">
+          <a class="btn btn-gold" href="https://wa.me/33651669485" target="_blank" rel="noopener">Écrire sur WhatsApp</a>
+          <a class="btn btn-line" href="tel:+33651669485">Appeler · 06 51 66 94 85</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="brand">Eukleia</div>
+      <div class="tagline">Conciergerie de prestige · Côte Fleurie</div>
+      <div class="address">21 rue Louvel et Brière · 14800 Touques</div>
+    </footer>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function () {
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* Entrée du hero */
+  window.addEventListener('load', function () {
+    document.body.classList.add('loaded');
+  });
+  setTimeout(function () { document.body.classList.add('loaded'); }, 600);
+
+  /* Révélation au scroll */
+  var revealEls = document.querySelectorAll('.reveal');
+  if (!reduceMotion && 'IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    revealEls.forEach(function (el) { io.observe(el); });
+  } else {
+    revealEls.forEach(function (el) { el.classList.add('in'); });
+  }
+
+  /* Rail du parcours */
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section[data-flag]'));
+  var rail = document.getElementById('rail');
+  var trackFill = document.getElementById('trackFill');
+  var railBtns = [];
+
+  sections.forEach(function (s) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = s.getAttribute('data-flag');
+    b.setAttribute('data-label', s.getAttribute('data-label'));
+    b.setAttribute('aria-label', 'Aller à : ' + s.getAttribute('data-label'));
+    if (s.getAttribute('data-finish')) { b.classList.add('finish'); }
+    b.addEventListener('click', function () {
+      s.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    });
+    rail.appendChild(b);
+    railBtns.push(b);
+  });
+
+  var progressBar = document.getElementById('progressBar');
+  var ticking = false;
+
+  function update() {
+    ticking = false;
+    var doc = document.documentElement;
+    var max = doc.scrollHeight - window.innerHeight;
+    var p = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+
+    if (progressBar) { progressBar.style.width = (p * 100) + '%'; }
+    if (trackFill && rail.offsetHeight) {
+      trackFill.style.height = Math.max(0, (rail.offsetHeight - 28) * p) + 'px';
+    }
+
+    var activeIdx = 0;
+    var marker = window.innerHeight * 0.38;
+    sections.forEach(function (s, i) {
+      if (s.getBoundingClientRect().top <= marker) { activeIdx = i; }
+    });
+    railBtns.forEach(function (b, i) {
+      b.classList.toggle('done', i < activeIdx);
+      b.classList.toggle('active', i === activeIdx);
+    });
+  }
+
+  window.addEventListener('scroll', function () {
+    if (!ticking) { ticking = true; window.requestAnimationFrame(update); }
+  }, { passive: true });
+  window.addEventListener('resize', update);
+  update();
+
+  /* Copier le mot de passe */
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'absolute';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  document.querySelectorAll('.copy-btn').forEach(function (btn) {
+    var original = btn.textContent;
+    btn.addEventListener('click', function () {
+      var text = btn.getAttribute('data-copy');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(function () { fallbackCopy(text); });
+      } else {
+        fallbackCopy(text);
+      }
+      btn.classList.add('copied');
+      btn.textContent = 'Copié ✓';
+      setTimeout(function () {
+        btn.classList.remove('copied');
+        btn.textContent = original;
+      }, 2200);
+    });
+  });
+})();
+</script>
+<script>
+(function () {
+  var mapEl = document.getElementById('map');
+  var offline = document.getElementById('mapOffline');
+  if (!mapEl) { return; }
+  if (!window.L) { if (offline) { offline.classList.add('show'); } return; }
+
+  var HOME = { name: 'Le Mogador', lat: 49.357275, lng: 0.07215 };
+  var PLACES = [{"name": "Le Pôle International du Cheval Longines", "cats": ["cheval"], "cat": "L'esprit cheval", "lat": 49.339359, "lng": 0.096074, "time": "≈ 8 min en voiture"}, {"name": "Centre équestre de Blonville", "cats": ["cheval"], "cat": "L'esprit cheval", "lat": 49.334912, "lng": 0.027402, "time": "≈ 10 min en voiture"}, {"name": "Le Haras de Meautry — Touques", "cats": ["cheval"], "cat": "L'esprit cheval", "lat": 49.342228, "lng": 0.105016, "time": "≈ 9 min en voiture"}, {"name": "Le Drakkar", "cats": ["tables"], "cat": "Nos tables", "lat": 49.359435, "lng": 0.073275, "time": "≈ 4 min à pied"}, {"name": "Chez Miocque", "cats": ["tables"], "cat": "Nos tables", "lat": 49.359422, "lng": 0.073095, "time": "≈ 4 min à pied"}, {"name": "Hibouville", "cats": ["tables"], "cat": "Nos tables", "lat": 49.360034, "lng": 0.077261, "time": "≈ 8 min à pied"}, {"name": "Le Deauville", "cats": ["tables"], "cat": "Nos tables", "lat": 49.363166, "lng": 0.080769, "time": "≈ 15 min à pied"}, {"name": "La Brise Marine", "cats": ["tables"], "cat": "Nos tables", "lat": 49.400018, "lng": 0.123859, "time": "≈ 14 min en voiture"}, {"name": "Ciro's", "cats": ["tables"], "cat": "Nos tables", "lat": 49.360256, "lng": 0.065556, "time": "≈ 10 min à pied"}, {"name": "Kyo Deauville", "cats": ["tables"], "cat": "Nos tables", "lat": 49.360124, "lng": 0.075599, "time": "≈ 7 min à pied"}, {"name": "Mamma Mia", "cats": ["tables"], "cat": "Nos tables", "lat": 49.361485, "lng": 0.082029, "time": "≈ 14 min à pied"}, {"name": "La Terrasse des Ammonites", "cats": ["tables"], "cat": "Nos tables", "lat": 49.34874, "lng": 0.047398, "time": "≈ 7 min en voiture"}, {"name": "Les Franciscaines · Le Réfectoire", "cats": ["bienetre", "tables"], "cat": "Culture & bien-être", "lat": 49.354419, "lng": 0.06661, "time": "≈ 9 min à pied"}, {"name": "Spa Guerlain — Le Normandy", "cats": ["bienetre"], "cat": "Culture & bien-être", "lat": 49.360018, "lng": 0.071613, "time": "≈ 5 min à pied"}, {"name": "Maison Douce Époque", "cats": ["bienetre"], "cat": "Culture & bien-être", "lat": 49.337498, "lng": 0.054337, "time": "≈ 8 min en voiture"}, {"name": "Villerville", "cats": ["escapades"], "cat": "Escapades", "lat": 49.400409, "lng": 0.128208, "time": "≈ 14 min en voiture"}, {"name": "Beaumont-en-Auge", "cats": ["escapades"], "cat": "Escapades", "lat": 49.278363, "lng": 0.111144, "time": "≈ 20 min en voiture"}, {"name": "Les Batteries du Mont Canisy", "cats": ["escapades"], "cat": "Escapades", "lat": 49.340708, "lng": 0.040174, "time": "≈ 9 min en voiture"}, {"name": "La Ferme du Château", "cats": ["escapades"], "cat": "Escapades", "lat": 49.396069, "lng": 0.128004, "time": "≈ 14 min en voiture"}];
+
+  var map = L.map('map', { scrollWheelZoom: false });
+  var tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+  }).addTo(map);
+
+  var loadedTiles = 0;
+  tiles.on('tileload', function () { loadedTiles++; });
+  setTimeout(function () { if (!loadedTiles && offline) { offline.classList.add('show'); } }, 4000);
+
+  function makeIcon(home) {
+    return L.divIcon({
+      className: '',
+      html: '<div class="mk' + (home ? ' home' : '') + '"></div>',
+      iconSize: home ? [20, 20] : [16, 16],
+      iconAnchor: home ? [10, 10] : [8, 8]
+    });
+  }
+
+  var homeMarker = L.marker([HOME.lat, HOME.lng], { icon: makeIcon(true), zIndexOffset: 1000 }).addTo(map);
+  homeMarker.bindTooltip('Le Mogador', { permanent: true, direction: 'top', offset: [0, -10], className: 'home-label' });
+  homeMarker.bindPopup('<span class="pp-name">Le Mogador</span><span class="pp-cat">Votre maison</span>69 rue Albert Fracasse, Deauville');
+
+  var markers = PLACES.map(function (p) {
+    var m = L.marker([p.lat, p.lng], { icon: makeIcon(false) });
+    var dir = 'https://www.google.com/maps/dir/?api=1&destination=' + p.lat + '%2C' + p.lng;
+    m.bindPopup(
+      '<span class="pp-name">' + p.name + '</span>' +
+      '<span class="pp-cat">' + p.cat + ' \u00b7 ' + p.time + '</span>' +
+      '<a class="pp-link" href="' + dir + '" target="_blank" rel="noopener">Itin\u00e9raire \u2197</a>'
+    );
+    m._cats = p.cats;
+    return m;
+  });
+
+  function applyFilter(cat) {
+    var pts = [[HOME.lat, HOME.lng]];
+    markers.forEach(function (m) {
+      var show = (cat === 'all') || (m._cats.indexOf(cat) !== -1);
+      if (show) { m.addTo(map); pts.push([m.getLatLng().lat, m.getLatLng().lng]); }
+      else { map.removeLayer(m); }
+    });
+    map.fitBounds(L.latLngBounds(pts), { padding: [36, 36] });
+  }
+
+  var chips = document.querySelectorAll('.map-filters .chip');
+  chips.forEach(function (c) {
+    c.addEventListener('click', function () {
+      chips.forEach(function (x) { x.classList.remove('active'); });
+      c.classList.add('active');
+      applyFilter(c.getAttribute('data-cat'));
+    });
+  });
+
+  applyFilter('all');
+  window.addEventListener('resize', function () { map.invalidateSize(); });
+})();
+</script>
+</body>
+</html>
